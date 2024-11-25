@@ -357,6 +357,7 @@ class Game:
         for coral in self.corais[:]:
             coral.x -= speed
             if coral.colliderect(self.submarino):
+                salvar_score(self.player_name, self.score)
                 self.main_menu()
             elif coral.x < 0:
                 self.corais.remove(coral)
@@ -376,7 +377,6 @@ class Game:
                     break
             if torpedo.x > SCREEN_WIDTH:
                 self.torpedos.remove(torpedo)
-
 
     def display_victory_screen(self):
         """Tela de vitória com opção de voltar ao menu principal."""
