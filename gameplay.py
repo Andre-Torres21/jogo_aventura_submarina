@@ -16,6 +16,7 @@ class Game:
         self.running = True
         self.score = 0
         self.phase = 1
+        self.score_saved = False  # Indica se a pontuação já foi salva
 
         # Inicializa nave e objetos do jogo
         self.submarino = pygame.Rect(50, 300, 50, 50)
@@ -117,9 +118,8 @@ class Game:
         # Configurações da tela
         line_height = 40  # Altura de cada linha
         visible_height = 400  # Altura da área visível (caixa de exibição do ranking)
-
-        # Altura total do conteúdo
-        content_height = len(rankings) * line_height
+        content_height = len(rankings) * line_height  # Altura total do conteúdo
+        max_scroll = max(0, content_height - visible_height)
 
         while True:
             self.screen.fill((0, 0, 0))  # Limpa a tela
@@ -129,23 +129,23 @@ class Game:
             self.screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 50))
 
             # Limitar o deslocamento máximo e mínimo
-            max_scroll = max(0, content_height - visible_height)
             scroll_offset = max(0, min(scroll_offset, max_scroll))
 
-            # Exibe rankings
-            if rankings:
-                start_index = scroll_offset // line_height
-                end_index = start_index + (visible_height // line_height) + 1
-                visible_rankings = rankings[start_index:end_index]
+            # Exibe rankings visíveis
+            start_index = scroll_offset // line_height
+            end_index = start_index + (visible_height // line_height) + 1
+            visible_rankings = rankings[start_index:end_index]
 
+            if visible_rankings:
                 for i, entry in enumerate(visible_rankings):
                     nome_jogador = entry.get('nome_jogador', '---')
                     score = entry.get('pontos', 0)
-                    ranking_text = font.render(f"{start_index + i + 1}. {nome_jogador}: {score} pontos", True, (255, 255, 255))
+                    ranking_text = font.render(
+                        f"{start_index + i + 1}. {nome_jogador}: {score} pontos", True, (255, 255, 255)
+                    )
                     y_position = 100 + (i * line_height)
                     self.screen.blit(ranking_text, (SCREEN_WIDTH // 2 - ranking_text.get_width() // 2, y_position))
             else:
-                # Caso não haja rankings
                 error_text = font.render("Nenhum ranking disponível.", True, (255, 255, 255))
                 self.screen.blit(error_text, (SCREEN_WIDTH // 2 - error_text.get_width() // 2, 100))
 
@@ -174,80 +174,6 @@ class Game:
                     elif event.button == 5:  # Scroll para baixo
                         scroll_offset += scroll_speed
 
-            """Exibe a lista de rankings com barra de rolagem."""
-            font = pygame.font.Font(None, 36)
-            scroll_offset = 0  # Controle do deslocamento inicial
-            scroll_speed = 20  # Velocidade do scroll
-
-            try:
-                # Obter rankings da API
-                rankings = get_rankings()
-            except requests.RequestException as e:
-                rankings = []
-                print(f"Erro ao carregar rankings: {e}")
-
-            # Configurações da tela e cálculo da altura do conteúdo
-            line_height = 40  # Altura de cada linha
-            content_height = len(rankings) * line_height  # Altura total do conteúdo
-            visible_height = 400  # Altura da área visível
-
-            while True:
-                self.screen.fill((0, 0, 0))  # Limpa a tela
-
-                # Renderizar título
-                title_text = font.render("Ranking", True, (255, 255, 255))
-                self.screen.blit(title_text, (SCREEN_WIDTH // 2 - title_text.get_width() // 2, 50))
-
-                # Renderizar rankings em uma superfície separada
-                scrollable_surface = pygame.Surface((SCREEN_WIDTH, content_height))
-                scrollable_surface.fill((0, 0, 0))
-
-                if rankings:
-                    # Exibe rankings
-                    for i, entry in enumerate(rankings):
-                        nome_jogador = entry.get('nome_jogador', '---')
-                        score = entry.get('pontos', 0)
-                        ranking_text = font.render(f"{i + 1}. {nome_jogador}: {score} pontos", True, (255, 255, 255))
-                        scrollable_surface.blit(ranking_text, (SCREEN_WIDTH // 2 - ranking_text.get_width() // 2, i * line_height))
-                else:
-                    # Caso não haja rankings
-                    error_text = font.render("Nenhum ranking disponível.", True, (255, 255, 255))
-                    scrollable_surface.blit(error_text, (SCREEN_WIDTH // 2 - error_text.get_width() // 2, 0))
-
-                # Ajustar o deslocamento para evitar espaços em branco
-                max_scroll = max(0, content_height - visible_height)
-                scroll_offset = max(0, min(scroll_offset, max_scroll))
-
-                # Exibir a superfície com a parte visível (clipping)
-                visible_rect = pygame.Rect(0, scroll_offset, SCREEN_WIDTH, visible_height)
-                self.screen.blit(scrollable_surface, (0, 100), visible_rect)
-
-                # Mensagem de voltar
-                back_text = font.render("Pressione ESC para voltar", True, (255, 255, 255))
-                self.screen.blit(back_text, (SCREEN_WIDTH // 2 - back_text.get_width() // 2, 520))
-
-                # Atualizar a tela
-                pygame.display.flip()
-
-                # Lidar com eventos
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        self.running = False
-                        return
-                    elif event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_ESCAPE:
-                            return
-                        elif event.key == pygame.K_UP:
-                            # Role para cima
-                            scroll_offset -= scroll_speed
-                        elif event.key == pygame.K_DOWN:
-                            # Role para baixo
-                            scroll_offset += scroll_speed
-                    elif event.type == pygame.MOUSEBUTTONDOWN:
-                        if event.button == 4:  # Scroll para cima
-                            scroll_offset -= scroll_speed
-                        elif event.button == 5:  # Scroll para baixo
-                            scroll_offset += scroll_speed
 
     def run(self):
         while self.running:
@@ -329,8 +255,6 @@ class Game:
 
         # Condição de vitória
         if self.score >= 400:
-            if self.score == 400:
-                salvar_score(self.player_name, self.score)
             self.display_victory_screen()
             self.running = False
 
@@ -357,8 +281,10 @@ class Game:
         for coral in self.corais[:]:
             coral.x -= speed
             if coral.colliderect(self.submarino):
-                salvar_score(self.player_name, self.score)
-                self.main_menu()
+                if not self.score_saved:
+                    salvar_score(self.player_name, self.score)
+                    self.score_saved = True  # Evita salvar novamente
+                self.game_over_screen()
             elif coral.x < 0:
                 self.corais.remove(coral)
 
@@ -377,6 +303,68 @@ class Game:
                     break
             if torpedo.x > SCREEN_WIDTH:
                 self.torpedos.remove(torpedo)
+
+    def game_over_screen(self):
+        if not self.score_saved:
+            salvar_score(self.player_name, self.score)
+            self.score_saved = True  # Pontuação salva apenas uma vez
+
+        
+        """Exibe a tela de fim de jogo com pontuação e opções."""
+        font = pygame.font.Font(None, 64)
+        small_font = pygame.font.Font(None, 36)
+
+        while True:
+            self.screen.fill((0, 0, 0))
+
+            # Texto de fim de jogo
+            game_over_text = font.render("Fim de Jogo!", True, (255, 0, 0))
+            self.screen.blit(
+                game_over_text, (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2, 100)
+            )
+
+            # Pontuação
+            score_text = small_font.render(f"Pontuação: {self.score}", True, (255, 255, 255))
+            self.screen.blit(
+                score_text, (SCREEN_WIDTH // 2 - score_text.get_width() // 2, 200)
+            )
+
+            # Instruções
+            instructions_text = small_font.render("Pressione J para jogar novamente", True, (255, 255, 255))
+            self.screen.blit(
+                instructions_text, (SCREEN_WIDTH // 2 - instructions_text.get_width() // 2, 300)
+            )
+            ranking_text = small_font.render("Pressione R para ver o ranking", True, (255, 255, 255))
+            self.screen.blit(
+                ranking_text, (SCREEN_WIDTH // 2 - ranking_text.get_width() // 2, 350)
+            )
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                    return
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_j:  # Jogar novamente
+                        self.reset_game()
+                        return
+                    elif event.key == pygame.K_r:  # Ver ranking
+                        self.display_ranking()
+                        return
+
+    def reset_game(self):
+        """Reseta o jogo para iniciar uma nova partida."""
+        self.score = 0
+        self.phase = 1
+        self.submarino = pygame.Rect(50, 300, 50, 50)
+        self.corais = []
+        self.tesouros = []
+        self.torpedos = []
+        self.last_torpedo_time = 0
+        self.score_saved = False  # Permite salvar pontuação na nova partida
+        self.get_player_name()
+        self.run()  # Inicia o jogo novamente
 
     def display_victory_screen(self):
         """Tela de vitória com opção de voltar ao menu principal."""
