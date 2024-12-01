@@ -1,6 +1,6 @@
 import pygame
 
-class SpriteLoader:
+class Sprites:
     def __init__(self):
         self.submarino = pygame.image.load('assets/submarino.png')
         self.submarino = pygame.transform.scale(self.submarino, (50, 50))

@@ -1,6 +1,6 @@
 # Configurações gerais do jogo
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+LARGURA_TELA = 800
+ALTURA_TELA = 600
 FPS = 60
 TITLE = "Aventura submarina"
 FONT_SIZE = 32

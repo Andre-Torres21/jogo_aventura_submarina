@@ -9,6 +9,6 @@ def salvar_score(nome_jogador, score):
     )
     return response.json()
 
-def get_rankings():
-    response = requests.get(f"{BASE_URL}rankings/")
+def get_ranking():
+    response = requests.get(f"{BASE_URL}ranking/")
     return response.json()
